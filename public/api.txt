@@ -1,0 +1,1500 @@
+API说明
+
+接口格式
+－ 请求： https://wx.firstwisdom.cn/  
+－ 返回： json格式
+         {"data":"","info":"","status":0/1/2}
+         status：为0表示成功，status不为0则表示失败, 其中2表示未登录。
+         info：提示信息或错误信息
+         data：成功时返回的数据，json格式。
+－ 请求方法： GET POST 不限
+- 测试账号
+  登录账号: 18559672301
+  密码: 123456
+
+========== app和服务端session机制 ==========
+- app第一次调用后端接口时,接口返回一个名字为 GEKSESSID 的cookie,存放的是session id。
+  app接收到这个session id之后需要保存到本地,并且之后每次调用接口,都需要通过cookie带上这个session id。
+
+- app每次调用后端接口,都要检查接口是否返回一个名字为 GEKSESSID 的cookie,如果返回,则需要更新之前保存的接口session id。
+  因为后端对于已登录的session id,会定期重新生成, 加强安全性。
+
+- 对于需要登录的接口,如果用户未登录,则接口返回 {"data":"","info":"","status":2} status等于2表示未登录,需要跳转到登录界面,让用户登录。
+
+- app不需要考虑GEKSESSID cookie的有效期和作用域,session id是否有效由后端决定。
+
+
+========== 资讯接口 ==========
+- 获取更新消息数
+    https://wxtest.firstwisdom.cn/news/getLastestNum?last_time=2018-03-27%2009:00:00
+    参数：
+        last_time：来源于第一页第一条消息的时间。
+
+- 分页获取资讯
+    https://wxtest.firstwisdom.cn/news/query?page=1&page_size=20
+
+
+========== 消息中心（app版） ==========
+- 获取用户消息中心数据
+  https://wx.firstwisdom.cn/user/getMsgCenter
+  返回data：
+   type: 消息类型 1-金股 2-涨停大师 3-T+0 4-多空
+   new_msg_num：未读消息数
+   new_msg：新消息
+       time：消息产生时间
+       msg：消息内容
+       status：0-未读 1-已读
+       symbol: 股票代码 用于T+0消息跳转
+       stock： 股票名称
+       di： -1 T+0卖点信号  1 T+0买点信号
+
+- 获取指定类型的消息
+  https://wx.firstwisdom.cn/user/getSubscribeMsg?type=1&page=1&page_size=10
+  参数： 
+    type： 消息类型 1-金股 2-涨停大师 3-T+0 4-多空
+    page: 第几页
+    page_size: 每页数量
+  返回data：
+       time：消息产生时间
+       msg：消息内容
+       status：0-未读 1-已读
+       symbol: 股票代码 用于T+0消息跳转
+       stock： 股票名称
+       di： -1 T+0卖点信号  1 T+0买点信号
+
+- 设置消息全部已读
+  https://wx.firstwisdom.cn/user/setReadedMsg?type=1
+  返回data：1 - 全部已读 
+
+
+========== 系统接口 ==========
+- 获取banners
+  https://wx.firstwisdom.cn/misc/getBanners
+  返回data: 
+   image: banner图片
+   url: 跳转链接
+
+- 获取app配置
+  https://wx.firstwisdom.cn/misc/getAppConfig
+  返回data:
+    "config_version": 配置的版本号
+    "api_host": 接口地址
+    "pay_type": { 控制客户端显示哪些支付
+            "android": [
+                "alipay", 
+                "weixin"
+            ], 
+            "ios": [
+                "alipay", 
+                "weixin", 
+                "apple"
+            ]
+        }, 
+    "update_interval": 数据更新周期
+    "webview_urls": { 使用H5页面的URL
+      "yzjg":  一智金股产品介绍页URL
+      "ztds": 涨停大师产品介绍页URL
+      "t0":   T+0产品介绍页URL
+      "dk":   多空信号产品介绍页URL
+      "user_agreement": 注册用户协议URL
+      "buy_agreement": 产品用户许可服务协议URL
+    }
+
+- 获取安卓更新信息
+  https://wx.firstwisdom.cn/misc/updateAndroidApp
+  返回data:
+    "name": app名称
+    "version": app版本
+    "build": ios build号 / android versionCode
+    "time":  发布时间
+    "packageUrl": 安装包下载地址
+    "packageSize": 安装包大小
+    "isForceUpdate": 是否强制更新
+    "intro" : 一句话介绍
+
+========== 订阅/提醒接口 ==========
+- 检查用户是否订阅
+  https://wx.firstwisdom.cn/stocks/isSubscribe?symbol=000001&type=1
+  参数: 
+     symbol: 股票代码
+     type: 服务类型: 1- T+0提醒 2-多空提醒 
+  返回data:  0-未订阅 1-已订阅
+
+- 列出用户订阅服务
+  https://wx.firstwisdom.cn/stocks/listsubscribe?symbol=000001
+  参数:
+    symbol: 股票代码, 【可选】,如果没有指定股票代码,则返回用户自选股票的订阅服务。
+  返回data: 
+    数组,格式为: data[symbol][type] = status
+      symbol: 股票代码
+      type: 服务类型: 1- T+0提醒 2-多空提醒 
+      status: 0-未订阅 1-已订阅
+    
+  注意: 用户自选股票没有出现在返回结果中时,则视为未订阅该服务。
+
+- 订阅
+  https://wx.firstwisdom.cn/stocks/subscribe?symbol=000001&type=1
+  参数: 
+     symbol: 股票代码
+     type: 服务类型: 1- T+0提醒 2-多空提醒
+
+- 取消订阅
+  https://wx.firstwisdom.cn/stocks/cancelsubscribe?symbol=000001&type=2
+  参数: 
+     symbol: 股票代码
+     type: 服务类型: 1- T+0提醒 2-多空提醒
+
+========== 订单和支付接口 ==========
+- 判断用户是否购买指定的服务
+  https://wx.firstwisdom.cn/order/serviceIsBuy?service_id=1
+  参数说明：
+    service_id : 1=一智金股，2=涨停大师
+  返回data: 
+   isbuy: 0-未购买 1-已购买且未过期
+   start_date: 服务开始时间
+   end_date: 服务结束时间
+   now: 当前时间
+
+- 获取用户购买的服务
+  https://wx.firstwisdom.cn/order/getUserServices 
+  返回data说明:
+  id: 服务id
+  status: 0-未过期  1- 已过期
+  start_date: 服务开始时间
+  end_date: 服务结束时间
+
+- 获取服务的信息
+  https://wx.firstwisdom.cn/order/getService?service_id=1
+  参数说明：
+    service_id : 1=一智金股，2=涨停大师
+  返回data说明:
+  id: 服务id
+  name: 服务名
+  icon: 服务图标URL
+  intro: 服务介绍
+  sku: 服务sku
+     id: sku id
+     type: sku 类型  1-一个月 3-三个月 12-一年
+     price: 价格
+     mark_price: 原价
+
+- 提交订单并支付
+  https://wx.firstwisdom.cn/order/buy?sku_id=1&fr=1&pay_type=2
+  参数：
+    sku_id: 商品ID    一智金股： 6 涨停大师：3
+        说明：1=一智的一个月，2=一智的三个月，3=一智的13个月
+             4=涨停的一个月，5=涨停的3个月，6=涨停的12个月
+
+    fr： 指明订单来源渠道：1-ios app、2-android app 4-小程序
+    pay_type：1 - 微信app支付 2-支付宝支付 4-小程序
+    code : 如果用户不是小程序登录的话要传
+  返回data说明:
+   order_sn: 订单编号
+   order_id: 订单ID
+   pay: 支付的请求参数
+
+- 支付失败或取消支付后重新支付
+  https://wx.firstwisdom.cn/order/pay?order_sn=2018012510365674067644
+  参数:
+    order_sn: 订单编号
+    pay_type：1 - 微信app支付、 2-支付宝支付 4-小程序
+    code : 如果用户不是小程序登录的话要传
+  返回data说明:
+   order_sn: 订单编号
+   order_id: 订单ID
+   pay: 支付的请求参数
+
+ - 查询订单是否支付
+  https://wx.firstwisdom.cn/order/queryStatus?order_sn=2018012510365674067644
+  参数:order_sn: 订单编号
+  返回成功时,data说明: 0-未支付  1-已支付
+
+
+
+========== 用户接口 ==========
+
+- 检查手机号是否已注册
+  https://wx.firstwisdom.cn/user/mobileIsExist?mobile=18559672301
+  返回data说明: 0-未注册 1-已注册
+
+- 发送手机短信
+  https://wx.firstwisdom.cn/user/sendSms?mobile=18559672301&type=reg
+  参数：
+    mobile : 手机号
+    type : reg/find   注册/找回密码
+
+- 注册
+  https://wx.firstwisdom.cn/user/register
+  参数:
+    mobile: 注册手机号
+    smscode: 短信验证码
+    password: 密码
+    inviter: 邀请码 可选。
+
+- 获取用户的二维码
+  https://wx.firstwisdom.cn/user/getQrcode
+  返回png格式的图片。
+
+- 是否登录
+  https://wx.firstwisdom.cn/user/isLogin
+  返回data: 0-未登录 1-已登录
+
+- 登录
+  https://wx.firstwisdom.cn/user/login
+  参数:
+    account: 登录账号
+    password: 密码
+    autologin: 是否记住密码 取值 0 1
+
+- 注销
+  https://wx.firstwisdom.cn/user/logout
+
+- 修改密码
+  https://wx.firstwisdom.cn/user/changePassword
+  参数:
+    password: 新密码
+    smscode:短信验证码
+    mobile:手机号
+
+- 上传用户图像
+  https://wx.firstwisdom.cn/user/uploadAvatar
+  参数:
+      上传图像的字段名: avatar
+  返回data:
+      头像的URL。
+
+- 获取用户信息
+  https://wx.firstwisdom.cn/user/get
+
+- 用户反馈
+  https://wx.firstwisdom.cn/User/feedback
+  请求参数
+  feedback ：
+  返回status = 0 即为反馈成功，反馈内容有长度限制，不能太短
+
+
+========== 行情接口 ==========
+采用统一接口，前端根据需求使用不同的参数进行请求
+-sub可用参数
+    onlinePredict   #买入卖出信号
+    onlineUpDown    #实时涨跌预测
+    onlineIndex     #上证等指数
+
+- 行情
+    https://wx.firstwisdom.cn/Market
+    参数:
+        sub[] array : onlineIndex(上证等指数)/onlineUpDown(事实涨跌)/onlinePredict(买入卖出信号)
+        req[] array : 请求的参数
+
+- 行情 -> 上证等指数
+    https://wx.firstwisdom.cn/Market
+    参数：
+        sub[]  array:  ['onlineIndex']
+    返回data：
+        {"sh":{"value":值,"diff":增减,"diff_rate":增减百分比, max :压力位, min:支撑位, max_min_date: 压力位支撑位发布时间, tags[] : 技术标签},
+        "sz":{"value":3126,"diff":29,"diff_rate":0.3,  max :压力位, min:支撑位, max_min_date: 压力位支撑位发布时间, tags[] : 技术标签},
+        "cy":{"value":3010,"diff":29,"diff_rate":0.3,  max :压力位, min:支撑位, max_min_date: 压力位支撑位发布时间, tags[] : 技术标签}
+
+- 【已弃用】行情 ->实时涨跌预测
+    https://wx.firstwisdom.cn/Market
+    参数：
+        sub[]  array:  ['onlineUpDown']
+        同下(买入卖出信号)
+        num取值 a － 85% ～ 100%  b － 60% ～ 84%  c — 0% ～ 59%   d － -100% ～0%
+    返回data：
+        同下(买入卖出信号)
+
+- 【已弃用】行情 -> 买入卖出信号
+    https://wx.firstwisdom.cn/Market
+    参数：
+        sub[]  array:  ['onlinePredict']
+        req['limit'] : 10;
+        req['offset'] : 0;
+        req['onlinePredict'][] : ['buy', 'sell'] #首页建议"limit 10 ,offset 0 "即可,买入卖出详情页，使用动态加载方式进行加载
+
+    返回data：
+        [{"stock_name":"股票名称","stock_id":股票id,"price":股票价格,"rate":股票涨跌概率,"scope":股票涨幅}]
+
+- 指数详情页
+    https://wx.firstwisdom.cn/Market
+    sub[] : ['indexDetail']
+    req['index_id'] : 000001
+    返回data :
+                    "indexDetail": {
+                      "detail": { "open": 开盘, "pre_close": 昨收, "amplitude": 振幅, "high_price": 最高,
+                       "low_price": 最低, "amount": 成交额,"chang_hand" => "换手率(计算过于复杂，暂不计算)"
+                       "up" : 涨家数, "down" : 跌家数, "flat":平家数},
+                      "price": { "value": "最新价", "diff": 差, "diff_rate": 百分比差 ,
+                      "active_flag" :  1：午间休市，2：收盘 , 3:开盘, 4:集合竞价15-25, 5:集合竞价25-30}, 6:集合竞价前 00-15
+                       "time" : 时间, max :压力位, min:支撑位, max_min_date: 压力位支撑位发布时间, tags[] : 技术标签
+                    }
+- 【已弃用】指数压力位支撑位，移到indexDetail、onlineIndex
+    https://wx.firstwisdom.cn/Market
+    sub[] : ['indexPriceRange']
+    req['index_id'] : 000001
+    返回 data :
+        "max" : 1232,
+        "min" : 231,
+        "date" : 最新的发布时间,
+        "tags": ["技术标签"]
+
+- 指数3日K线数据
+    https://wx.firstwisdom.cn/Market
+    sub[] : ['index3DayKLine']
+    req['index_id'] : 000001
+    返回data:
+        5日分时数据，格式与"k线图"分时数据一致
+
+
+- 指数k线
+    https://wx.firstwisdom.cn/Market
+    sub[] : ['k_line']
+    req['index_id'] : 000001(上)\399001(深)\399006(创)
+    req[k_line][] : ['second', 'day', 'week', 'month'] #该变量仅在有sub['k_line']时可用,用于拆分k线数据
+    req[k_line_limit] : ['limit' : 30, 'offset': 0 ]
+
+    返回data(与股票k线一样):
+                "second" : {
+                        "time_line" : [1496977351, 1496977351..]
+                        "date" : { 1496977351 : { "last_price": 当前价(收盘价), "avg_price": 均值, "total_volume": 交易量,"change_percent": 涨跌幅}}
+                },
+                "day" : {
+                       "time_line" : [1490284800,..]
+                       "date" : { 1490284800 : {
+                       "amount": 成交额(元), "change_percent": 涨跌幅(%), "change_price": 涨跌额,"close_price": 收盘价
+                       "date": 日期(与当前时间戳相同), "high_price": 最高价, "low_price": 最低价,"open_price": 开盘价
+                       "turnover_rate": 换手率, "volume": 成交量(手)
+                       }}
+                }
+- 指数实时涨跌分布
+    https://wx.firstwisdom.cn/Market
+    sub[] : ['onlineScopeCount']
+    req['index_id'] : 000001：上证、399001：深证、399006：创业，-1：全部
+
+   返回data:
+         "up10": { "num": 4 },
+         "up7_10": { "num": 3 },
+         "up5_7": { "num": 23 },
+         "up3_5": { "num": 114},
+         "up0_3": { "num": 766 },
+         "down0_3": { "num": 281 },
+         "down3_5": { "num": 40 },
+         "down5_7": { "num": 11 },
+         "down7_10": { "num": 3 },
+         "down10": { "num": 1 }
+
+- 盘中信号、买入卖出信号、疯狂T+0
+    https://wx.firstwisdom.cn/Market
+    sub[] : ['buySellSignal']
+    req[buySellSignal][] : 600000
+    req[buySellSignal][] : 300214
+
+    返回data :
+        {
+            "buy_sell_signal" : "盘中信号(与k_line一致)"
+            "second" : "分时图(与k_line一致)"
+            "header" : {
+                'name' : 股票名称, 'price' : 当前价格, 'scope' ： 涨跌百分比, 'diff' : 涨跌差,
+                'pre_close_price' : 昨收, 'stock_id' : 股票id
+            }
+            "is_favor" : 1
+        }
+
+- 股票列表(包含涨幅、换手、资金排序)
+    https://wx.firstwisdom.cn/Market
+    请求参数：
+    sub['StockList']
+
+    //请求格式：req[StockList][排序方式][限制结果]
+    //涨幅(change)
+    req[StockList][1][type]:change   类型
+    req[StockList][1][limit]:15   限制几条
+    req[StockList][1][offset]:0  从第几条开始
+    req[StockList][1][order]:desc  排序方式asc(跌)\desc(涨)
+    req[StockList][1][index]:-1  上证：SH, 深圳: SZ, 创业:CY , 全部: -1或者不传index
+
+    //换手率(turnover)
+    req[StockList][2][type]:turnover   类型
+    req[StockList][2][limit]:15   限制几条
+    req[StockList][2][offset]:0  从第几条开始
+    req[StockList][2][order]:desc  排序方式asc\desc
+
+    //资金(fund)
+    req[StockList][3][type]:fund   类型
+    req[StockList][3][limit]:15   限制几条
+    req[StockList][3][offset]:0  从第几条开始
+    req[StockList][3][order]:desc  排序方式asc\desc
+
+    返回数据：
+    {
+      "data": {
+        "StockList": [                      //与req对应
+          [                       //与req[StockList]对应
+            {
+              "stock_id": 603776,           //股票id
+              "stock_name": "永安行",       //股票名称
+              "price": 0,                   //股票价格
+              "scope": 0,                   //涨幅
+              "fund_in": 0,                 //资金流入
+              "change": 0                   //换手率
+            },]，
+            [
+     },
+       "info": "success",
+       "status": 0
+    }
+
+- 大盘资金流入流出
+    https://wx.firstwisdom.cn/Market
+    请求参数：
+    sub['IndexFund']
+    返回数据：
+    { "399001": "4225177936", "399006": "2074781196", "000001": "-19092417478", "other": "4019642902" }
+
+========== 选股接口 ==========
+采用统一接口，前端根据需求使用不同的参数进行请求
+- sub可用参数
+         #智能选股
+         smart_record       #最近20日战绩
+         smart_daily        #每日推荐
+         smart_change       #今日调仓
+         smart_winners      #历史牛股
+         smart_history      #子页面-历史推荐
+
+         top_daily        #涨停大师，每日推荐
+         top_winners      #涨停大师，历史牛股
+         top_history      #涨停大师，子页面-历史推荐
+
+         #技术掘金
+         tech_record
+         tech_daily
+         tech_winners
+         tech_history
+
+         #热点追击
+         hot_record
+         hot_daily
+         hot_winners
+         hot_history
+
+         select_record      #选股业绩
+
+         sectort_pool      #板块选股
+
+
+- 选股首页
+    https://wx.firstwisdom.cn/Select
+    参数
+        sub[]  array:    ['smart_record', 'tech_record', 'hot_record', 'select_record']
+    返回数据
+    smart_record->earnings           收益率
+    smart_record->earnings_30        30天累计收益率
+    smart_record->odds               胜率
+    smart_record->top_earnings      【涨停大师】收益率
+    smart_record->top_earnings_30   【涨停大师】30天累计收益率
+    smart_record->top_odds          【涨停大师】胜率
+    smart_record->tech_earnings     【技术掘金】收益率
+    smart_record->tech_earnings_30   【涨停大师】30天累计收益率
+    smart_record->tech_odds         【技术掘金】胜率
+    smart_record->hot_earnings      【热点追击】收益率
+    smart_record->hot_earnings_30   【涨停大师】30天累计收益率
+    smart_record->hot_odds          【热点追击】胜率
+
+- 智能选股
+    https://wx.firstwisdom.cn/Select
+    参数
+        sub[]  array: ['smart_record', 'smart_daily', 'smart_winners','smart_history', 'smart_change']
+    返回数据
+    smart_record    同上
+    smart_daily     array [{"stock_name":"股票名称","stock_id":股票id,"price":股票价格,"last_price":最新价格,"scope":股票涨幅, "included_time" : 入选时间}]
+    smart_change     array [{"stock_name":"股票名称","stock_id":股票id,"price":参考股票价格, "信号" ：买入/卖出, 'time': '调仓时间'}]
+    smart_winners   array 同smart_daily
+    smart_history   array [{"stock_name":"股票名称","stock_id":股票id,"include_price":股票价格,"quit_price"退出价格,"scope":股票涨幅,"included_time":收录时间, "quit_time": 退出时间,"earnings":收益率}]
+
+- 涨停大师
+    https://wx.firstwisdom.cn/Select
+    参数
+        sub[]  array: ['smart_record', 'top_daily', 'top_winners', 'top_history']
+    返回数据
+    与"智能选股一致"
+    top_history  array {"time_line" : 1500220800, "data" : [ 1500220800 : { 与"smart_history"一致 }]}
+
+- 技术掘金
+        tech_daily     array [{"stock_name":"股票名称","stock_id":股票id,"price":股票价格,"last_price":最新价格,"scope":股票涨幅,"signal" : 入选信号}]
+- 热点追击
+        hot_daily     array [{"stock_name":"股票名称","stock_id":股票id,"price":股票价格,"last_price":最新价格,"scope":股票涨幅,"hot" : 关联解释文字,"hot_rel":关联度}]
+
+- 板块选股
+    https://wx.firstwisdom.cn/Select
+    sub['sectort_pool']
+     返回数据:
+     "sectort_pool": {
+           "concept": [ //概念
+             {
+               "name": "板块名称",
+               "list": [
+                 {
+                   "stock_id": "002056","stock_name": "横店东磁", "sectort_name": "板块名称","price": 11.36,"scope": -69.93, time : 时间
+                 },
+               ]
+             "industry": [ //行业
+             },
+
+-  股票池订阅
+    https://wx.firstwisdom.cn/Select/updatesubscribe
+    参数
+    pool_id ： 股票池类型：1-金股、2-技术掘金、3-热点追击、4-综合、5-涨停大师
+    subscribe ： 1，订阅， 0 取消订阅
+    返回data
+    {"data":[],"info":"success","status":0}
+
+   判断股票池是否订阅
+   https://wx.firstwisdom.cn/Select/isSubscribe
+    参数
+    pool_id ： 股票池类型：1-金股、2-技术掘金、3-热点追击、4-综合、5-涨停大师
+    返回data
+    {"data":0/1,"info":"success","status":0}  
+
+    - 【已弃用】用户是否订阅这个消息，放在window.user_info.stockpool 中
+    stockpool的类型
+    smart : 金股
+    top： 涨停大师
+
+
+
+
+
+========== 股票搜索 ==========
+    https://wx.firstwisdom.cn/Market/s
+    参数
+        key  string
+    返回数据
+    [{"name":"股票名称","symbol":股票编号,'is_favor':1是，0不是},{"name":"\u5e73\u5b89\u94f6\u884c","symbol":600001,'is_favor':1}
+
+
+
+========== 自选页面 ==========
+- sub可用参数
+    onlineIndex     #上证等指数
+    favor           #自选股票
+- 自选(需登录)
+    https://wx.firstwisdom.cn/Market
+    参数
+        sub[]:['onlineIndex','favor']
+    返回数据
+       list: { "stock_name":"股票名称","stock_id":股票编号,"price":股票价格,"scope":涨跌幅度,"tags":[{tag:标签id, type:类型, days:最近几天}]"buy_sell_signal" : 格式与"k_line"buy_sell_signal一致},
+       signal:{ "flag" : 'sell/buy', "price" : 30.1, "stock_id" : 300006, "stock_name" : 实打实科技, "time" : 1502158020}
+
+- 判断是否已添加自选(需登录)
+    https://wx.firstwisdom.cn/Market/isFavor
+    参数
+        sub      array ["stock_id": 600000]
+    返回数据
+        {"data":{"is_favor":0},"info":"success","status":0}
+
+- [批量]判断是否已添加自选(需登录)
+    https://wx.firstwisdom.cn/Market/isFavorArr
+    参数：
+       stock_ids[]:600001
+       stock_ids[]:300349
+    返回数据：
+    {"data":{"600001":{"is_favor":0},"300349":{"is_favor":1}},"info":"success","status":0}
+
+- 添加自选
+    https://wx.firstwisdom.cn/Market/addFavor
+    参数
+        stock_id : int 021001
+    返回数据
+        {"data":[],"info":"stock_id is already set","status":300}
+
+- 删除自选
+    https://wx.firstwisdom.cn/Market/delFavor
+    参数
+        stock_id : int 021001
+    返回数据
+        {"data":[],"info":"stock_id is already set","status":300}
+
+- 【已弃用】保存消息提醒，使用userstock满足此接口
+    https://wx.firstwisdom.cn/Market/saveAcceptMsg
+    参数
+        stock_arr : [{stock_id : 600000, type : 1、勾选， 0、不勾选}]
+    返回数据
+        {"data":[],"info":"stock_id is already set","status":300}
+
+- 自选列表编辑 (要求用户操作时实时提交到服务器端)
+    https://wx.firstwisdom.cn/Market/userstock
+    参数：
+       (1) 置顶和调整自选列表的顺序,需要按列表顺序传递股票数组:
+          stock_arr : [{stock_id : '000016'},{stock_id : '000112'},...]
+       (2) 删除一个或多个股票,传递参数格式如下:
+          stock_arr : [{stock_id : '000016', status : 1、删除},...]
+       (3) 自选股票的T+0和多空信号提醒,请参考上述的《订阅和提醒》接口。
+
+    返回数据：
+    {"data":[修改后的自选list列表],"info":"stock_id is already set","status":300}
+
+    注意(tips)：如果只需要修改一个自选，不需要整个列表上传,stock_arr中传修改的就行(例如"长按置顶"时，只需要将股票的pos值变为最大，然后提交一个股票上来就行)
+
+========== 个股页面 ==========
+- 请求URL示例: 
+   https://wx.firstwisdom.cn/stocks?sub[]=dk_mode&req[stock_id]=000002
+
+- req 附带参数
+    stock_id        #股票id
+
+- sub可用参数
+    price           #页面顶端，实时价格，今天等
+    predict         #一智预测
+    k_line          #k线图，包括分时、日、月k线，以及右侧的10档行情
+    ni_monitor      #一智盯盘
+    opinion_monitor #舆情监控
+    money_monitor   #资金监控
+    stock_kchart_like   #相似k线
+    dk_mode         #多空模式
+
+- #多空模式详情页
+    https://wx.firstwisdom.cn/Stocks
+    参数
+        sub[] array ['dk_mode']
+    返回数据
+     "data":  {
+    "dk_mode": {
+      "date": "时间戳",
+      "signal": 0,  #多空信号: 1-多头 D点, -1 空头 K点, 0-无信号
+      "total_d": 5, #90天出现的多头信号数
+      "total_k": 4, #90天出现的空头信号数
+      "return_rate": 5.4, #90天内累计收益率
+      "dk_list": [  #90天内多空信号列表
+        {
+          "date": "时间戳",
+          "signal": 0
+        },
+        ...
+      ]
+    }
+
+- #页面顶端，实时价格，今天等
+    https://wx.firstwisdom.cn/Stocks
+    参数
+        sub[] array ['price']
+    返回数据
+     "data": {
+        "price": {
+          "stock": { "name": "股票名称", "time": 股票当前时间戳(如果收盘，就为最后一条数据时间戳) , 'active_flag' => "0:停牌, 1：午间休市，2：收盘 , 3:开盘, 4:集合竞价15-25, 5:集合竞价25-30",6:集合竞价前 00-15},
+          "price": { "price": 股票价格, "diff": 股票涨跌差, "scope": 涨跌幅度百分比(除与100) },
+          "detail": {
+           "open": 今天开盘价, "pre_close": 昨天收盘价, "chang_hand": 换手率(除与100),  "avg_price":均价, "high_price" : 最价， "low_price":最低价
+           "volume": 成交量, "market_value": 总市值, "total_share" : 总股本,"pe_ratio": 市盈率,
+           "amount":总额, "circ_market_value": 流通市值, "outstanding_share" : 流通股本,
+            "amplitude" : 振幅,"pb_ratio":市净率, "bvps":每股净产值, "eps" :每股收益
+           }
+        }
+      }
+- #一智预测
+    https://wx.firstwisdom.cn/Stocks
+    参数
+        sub[] array ['predict']
+    返回数据
+     "predict": {
+          "price_range": { "max": 67, "min": 47 , 'price_range_data' : '5日分时数据，格式与分时数据一致'},
+          "tags": [ {tag:标签id, type:类型, days:最近几天}]
+        }
+     type解析
+        1-技术面 2-资金面 3-舆情面  5-涨停追击
+     tag解析
+     id - desc (name)
+        11-区间震荡（震）、12-上涨回调（高）、13-下跌反弹（低）、14-突破上升（涨）、15-跌破下降（跌）、21-多头占优（多）、22-空头占优（空） 31-当期热点（热）
+
+- #k线图，包括分时、日、月k线，以及右侧的10档行情
+    https://wx.firstwisdom.cn/Stocks
+    参数
+        sub[]:['k_line']
+        req[k_line][] : ['taq_5', 'taq_10', 'second', 'day', 'week', 'month', 'price_range_5_day'] #该变量仅在有sub['k_line']时可用,用于拆分k线数据
+        req[k_line_limit] : ['limit' : 30, 'offset': 0 ]
+    返回数据
+        "k_line" : {
+            "buy_sell_signal" : { #盘中信号
+                "list" : [{"price" : 价格, "flag" : "buy/sell","time" : "时间", "return_rate": "收益率"}],
+                "today_max_return" : 今日最高收益
+                "total_max_return" : 累计收益
+             }
+            "taq_5" : {     #5档行情
+                            "header(头部信息)" : {"last_price": 当前价 ,"transaction_ratio": 委比, }
+                            "bids(5挡卖)" : [ { "price": 价格, "volume": 量(股)(100股为1手) }]
+                            "asks(5挡买)" : [ { "price": 价格, "volume": 量(股)(100股为1手) }]
+                            "deal(分时成交)" : [{ "time": 时间, "price": 价格, "volume": 成交量, "order_num": 单数}]
+                    },
+            "taq_10" : {           #10档行情
+                    "header(头部信息)" : {"transaction_ratio": 委比, "buy_pan_percent": 买盘百分比, "sell_pan_percent": 卖盘百分比, "inner_pan" : 内盘, "outer_pan" :外盘 }
+                    "deal(分时成交)" : [{ "time": 时间, "price": 价格, "volume": 成交量, "order_num": 单数}]
+                    "bids(10挡卖)" : [ { "price": 价格, "volume": 量(股)(100股为1手) }]
+                    "asks(10挡买)" : [ { "price": 价格, "volume": 量(股)(100股为1手) }]
+                    "buysell_1_queue" : {"buy": '买1队列(使用split通过逗号分隔)' , "sell"：卖1队列}
+            },
+            "second" : {
+                    "time_line" : [1496977351, 1496977351..]
+                    "date" : { 1496977351 : { "last_price": 当前价(收盘价), "avg_price": 均值, "total_volume": 交易量,"change_percent": 涨跌幅}}
+            },
+            "day" : data : {
+                   "time_line" : [1490284800,..]
+                   "date" : { 1490284800 : {
+                   "amount": 成交额(元), "change_percent": 涨跌幅(%), "change_price": 涨跌额,"close_price": 收盘价
+                   "date": 日期(与当前时间戳相同), "high_price": 最高价, "low_price": 最低价,"open_price": 开盘价
+                   "turnover_rate": 换手率, "volume": 成交量(手)
+                   }}
+                   //走势分析
+                   ,stock_pivot :[{start_date:开始日期, end_date：结束日期, high_price:最高价, low_price:最低价}]  #用于绘制日k线的方框图
+                   ,stock_pivot_descrip : { content:描述内容, date:描述日期} 描述文字  #用于日k线下方描述文字,例如："09-27,突破中枢，突破动能较强。上方阻力区间为9.03"
+                   ,stock_pivot_line: [{date:日期, price:价格,}] #用于绘制折线图
+            },
+            "price_range_5_day" {
+                最近5日的分时k线
+            }
+            "week" : {
+                    #与day相同格式
+            }
+            "month" : {
+                    #与day相同格式
+            }
+        }
+- #一智盯盘
+    https://wx.firstwisdom.cn/Stocks
+    参数
+        sub[] array ['ni_monitor']
+        req[ni_monitor][] : [ 'limit' :  1 ] #该变量仅在有sub['k_line']时可用, 用于拆分一智盯盘数据, limit不存在时候，全部数据取出
+    返回数据
+        "ni_monitor" : {
+            "time_line" : [1496977351, 1496977351..]
+            #这里注意date的k即为time_line中的value
+            "data":{ 1496977351:{"name":名称, "desc" : 描述， "code" : 0为内容不存在，其他在下面code中找},}
+            "code" : { "code" : 1, "remark" : "改标签的解释",  "tag" : 标签名}
+        }
+
+
+- #舆情监控
+    https://wx.firstwisdom.cn/Stocks
+    参数
+        sub[] array ['opinion_monitor']
+    返回数据
+        "opinion_monitor" : {
+            #取值0-100,含有正负值
+            "evaluation" : 评价值
+        }
+
+- #资金监控
+    https://wx.firstwisdom.cn/Stocks
+    参数
+        sub[] array ['money_monitor']
+    返回数据
+         #数据均含正负值
+         "money_monitor": {
+            "amount" :
+            {
+              "in": 主力流入,
+              "out": 主力流出,
+              "pure_in": 主力净流入,
+              "pure_in_percent":主力流入百分比,
+            },
+            "order":{
+              "large_orders_in_amount": 大单流入,
+              "large_orders_in__amount_percent": 大单流入占比,
+              "large_orders_out_amount": 中单流出,
+              "large_orders_out__amount_percent": 中单流出占比,
+              ...medium(中单),small(小单),xlarge(超大单)
+            },
+            "last_5_day_amount" : {
+                1500912000: -37046141.77,
+                1500825600: -37046141.77
+            }
+         }
+- #相似k线
+    https://wx.firstwisdom.cn/Stocks
+    参数
+    sub[stock_kchart_like]
+    返回data:
+    {
+          "all": "35",  //所有相似数量
+          "up": "32",  //其中上涨数量
+          "down": "3", //下跌数量
+          "max": "9", //最高涨幅
+          "min": "-3", //最低涨幅
+          "start_date": 0, //开始时间
+          "end_date": 0, //结束时间
+          "k_line_self": { 日k数据 }
+          "k_line_other": {
+            [
+                {
+                  "stock_id": "300313",  //股票id
+                  "stock_name": "浦发银行",  //股票名称
+                  "start_date": "2017-03-08", //开始时间
+                  "end_date": "2017-03-08", //结束时间
+                  "like": "87",             //相似度
+                  "scope": "0.70",          //5日涨幅
+                  "pre_k_line": {"data": { //左侧日k线数据
+                  "fix_k_line": {"data": { //右侧"后续走势"日k线数据
+                }
+            ]
+          }
+    }
+
+
+========== 杂项 ==========
+
+    https://wx.firstwisdom.cn/Misc
+
+    - sub可用参数
+        sub : [is_open]
+    返回数据
+        {"data":{"is_open":0},"info":"success","status":0}
+    sub解释
+        is_open ： "0:开盘, 1：午间休市，2：收盘"
+
+========== 微信相关 ==========
+
+- #获取授权链接
+    https://wx.firstwisdom.cn/Misc/r
+
+    参数：
+    redirect ： 指定获取头像之后跳转的链接(例如："https://wx.firstwisdom.cn/#/user", 就填 "/#/user")
+    state : get_info(登录注册流程获取头像信息)/do_login(尝试使用微信登陆)
+
+    返回数据：
+    {"data":"https:\/\/open.weixin.qq.com\/connect\/oauth2\/authorize?appid=wxff3ee0fea37b509b&redirect_uri=http%3A%2F%2Fapi.firstwisdom.cn%2F&response_type=code&scope=snsapi_userinfo&state=head_img#wechat_redirect","info":"success","status":0}
+
+    接口解析：
+    流程分2种情况：
+     1、该用户未设置过头像
+     --> 用户注册/登录
+     --> 【前端】判断用户头像是否存在
+     -->  不存在
+     --> 【前端】请求"获取授权链接"接口(即本接口)
+     --> 【前端】(location.href)跳转接口返回data中的url
+     --> 【后台】获取头像，跳转至前端指定的 redirect
+     --> 【前端】在redirect页面，通过https://wx.firstwisdom.cn/user/get重新获取用户信息
+     -->  展示头像
+
+     2、该用户设置过头像
+     --> 用户注册/登录
+     --> 【前端】判断用户头像是否存在
+     -->  存在
+     -->  展示头像
+
+- #获取jssdk的config内容
+
+    https://wx.firstwisdom.cn/Misc/jssdk
+
+    参数：
+    url : 当前网页的URL，不包含#及其后面部分
+
+    返回数据：
+    {"data":{"appId":"wxff3ee0fea37b509b","nonceStr":"lP21hPNqgp9pqacF","timestamp":1499930136,"signature":"24da7b999ba4085dbd5d110bc5ce071354b36c28"},"info":"success","status":0}
+
+    微信文档jssdk使用方法：
+    https://mp.weixin.qq.com/wiki?t=resource/res_main&id=mp1421141115
+    tip:搜索 "通过config接口注入权限验证配置"
+
+
+========== 页面window参数 ==========
+用户基本信息： window.user_info
+微信jssdk变量： window.jssdk
+用户状态合法性等： window.user_valid ， status : 登录合法性, stockpool : 是否订阅
+
+统一说明：
+1.测试服域名：https://wxtest.firstwisdom.cn 或 http://183.56.160.133
+2.正式服域名：https://wx.firstwisdom.cn
+
+全部接口的公共参数：
+公共参数（无则传空字符串）
+ "appVersion" 1.0===APP版本
+ "systemVersion" 10.===APP系统版本
+ "platform" ‘ios’ ===设备来源
+ "deviceName" ===‘设备名字’
+ "utm" ===‘渠道’
+ "appNetwork"=== ‘网络环境’
+ "deviceId" ===设备ID
+
+1.	板块首页的主力资金流接口：
+URL：http://183.56.160.133/Theme/getInflowList
+请求方式：get/post
+参数：无
+返回值：
+{
+    "data": [
+        {
+            "theme_id": "21637",
+            "theme_name": "对方答复",
+            "net_inflow": "446.00",
+            "net_inflow_app" : ''
+        },
+        {
+            "theme_id": "15856",
+            "theme_name": "镍",
+            "net_inflow": "11.00"
+        },
+        {
+            "theme_id": "21637",
+            "theme_name": "腾讯",
+            "net_inflow": "5.67"
+        },
+        {
+            "theme_id": "231",
+            "theme_name": "镍",
+            "net_inflow": "-69.33"
+        },
+        {
+            "theme_id": "15856",
+            "theme_name": "送到附近",
+            "net_inflow": "-34.22"
+        },
+        {
+            "theme_id": "225",
+            "theme_name": "独角兽",
+            "net_inflow": "-26.36"
+        }
+    ],
+    "info": "success",
+    "status": 0
+}
+
+
+2.	板块列表接口
+URL：http://183.56.160.133/Theme/getThemeList
+参数：
+参数名字	参数类型	参数描述	默认值	是否必须	备注
+change_percent	String	涨幅	desc	否	desc 降序 asc  升序
+top_change	String	领涨股		否	desc 降序 asc  升序
+net_inflow	String	主力流入		否	desc 降序 asc  升序
+change_speed	String	涨速		否	desc 降序 asc  升序
+page	Int		1	否
+page_size	Int	每页数量	20
+
+请求方式：get/post
+返回值：
+{
+    "data": {
+        "total": 5,
+        "list": [
+            {
+                "theme_id": "21637",
+                "theme_name": "腾讯",
+                "change_percent": "3.57",
+                change_percent_app : ['text':"--",'color':'#ssddd']
+                "top_name": "航天信息",
+                "net_inflow_app": "5.67",
+                "change_speed": "-0.52"
+            },
+            {
+                "theme_id": "21637",
+                "theme_name": "对方答复",
+                "change_percent": "454.00",
+                "top_name": "发给",
+                "net_inflow": "446.00",
+                "change_speed": "6.00"
+            },
+            {
+                "theme_id": "15856",
+                "theme_name": "镍",
+                "change_percent": "11.12",
+                "top_name": "恒顺众昇",
+                "net_inflow": "11.00",
+                "change_speed": "11.00"
+            },
+            {
+                "theme_id": "15856",
+                "theme_name": "送到附近",
+                "change_percent": "222.00",
+                "top_name": "鼎折覆餗",
+                "net_inflow": "-34.22",
+                "change_speed": "23.00"
+            },
+            {
+                "theme_id": "231",
+                "theme_name": "镍",
+                "change_percent": "22.88",
+                "top_name": "的神色",
+                "net_inflow": "-69.33",
+                "change_speed": "23.00"
+            }
+        ]
+    },
+    "info": "success",
+    "status": 0
+}
+
+3.板块详情接口：
+	URL：http://183.56.160.133/Theme/getThemeInfo?theme_id=231
+	请求方式：get/post
+	参数：
+参数名字	参数类型	参数描述	默认值	是否必须	备注
+theme_id	int	板块ID		是
+
+返回值：
+{
+    "data": {
+        "theme_id": "231",
+        "theme_name": "镍",
+        "change_percent": "22.88",
+        "net_inflow": "-69.33",
+        "descrip": "年报高送转的炒作，是年报行情的重要组成部分，这也意味着2017年年报拉开了序幕。",
+        "zhang": 0,
+        "ping": 0,
+        "die": 3
+    },
+    "info": "success",
+    "status": 0
+}
+
+4.板块下的股票列表接口：
+url: http://183.56.160.133/Theme/getThemeStockList
+请求方式：get/post
+请求参数：
+参数名字	参数类型	参数描述	默认值	是否必须	备注
+theme_id	int	板块ID		是
+change_percent	String	涨幅	desc	否	desc 降序 asc  升序
+net_inflow	String	主力流入		否	desc 降序 asc  升序
+circ_market_value	String	流通市值		否	desc 降序 asc  升序
+
+返回值：
+字段名	说明
+Id
+Symbol	股票编码
+Name	股票名字
+Remark	股票说明
+active_flag	状态
+circ_market_value	流通市值（亿）
+price	价格
+change_percent	涨幅
+net_inflow	主力净流入
+
+{
+    "data": {
+        "0": {
+            "id": 15856,
+            "symbol": 300208,
+            "name": "恒顺众昇",
+            "remark": "公司持有印尼CNI镍矿公司17%股权，该公司是是LAPAOPAO的镍矿所有者，矿区总面积6785公顷，据PT INCO普查资料显示，镍含量≥1.52%的镍矿储量约为1.11亿吨。公司收购镍矿股权的主要目的是为公司将来工业园冶炼项目提供稳定低成本的原矿作为基础原料，项目在短期内无法获得收益",
+            "active_flag": 0,
+            "circ_market_value": "63.11",
+            "change_percent": -0.01833180568286,
+            "price": "10.71",
+            "net_inflow": "-85.00"
+        },
+        "1": {
+            "id": 15857,
+            "symbol": 2203,
+            "name": "海亮股份",
+            "remark": "海亮股份（002203）参股25723.47万股金川集团，金川集团最主要矿产资源为世界第三大硫化铜镍矿床，镍金属含量居国内第一，铜金属含量储量居国内同类矿床第一位，钴金属保有资源量、铂族金属储量和可开发利用的钴资源储量均居国内首位",
+            "active_flag": 1,
+            "circ_market_value": "130.28",
+            "change_percent": 0.0023094688221709,
+            "price": "8.68",
+            "net_inflow": "-3093.00"
+        },
+        "2": {
+            "id": 15858,
+            "symbol": 693,
+            "name": "*ST华泽",
+            "remark": "公司定增收购陕西华泽100%股权，主营业务为镍铁矿资源的采选、冶炼及相关产品的生产和销售。陕西华泽的镍产品综合竞争地位处于国内行业的前四位。拥有镍铁矿资源采选、冶炼及研究开发一体化产业链。",
+            "active_flag": 0,
+            "circ_market_value": "34.67",
+            "change_percent": -0.049429657794677,
+            "price": "7.50",
+            "net_inflow": "0.00"
+        },
+        "3": {
+            "id": 15859,
+            "symbol": 600432,
+            "name": "*ST吉恩",
+            "remark": "公司是中国最大的镍盐供应商，富家矿及大岭矿两镍矿已探明金属储量近5万吨",
+            "active_flag": 0,
+            "circ_market_value": "54.67",
+            "change_percent": 0,
+            "price": 0,
+            "net_inflow": 0
+        }
+    },
+    "info": "success",
+    "status": 0
+}
+
+首页导航栏接口
+URL ：http://183.56.160.133/newindex/getNavigationList
+
+请求方式 get / post
+
+参数 ： 无
+
+返回值
+说明： type : 1=h5 2=内页
+{
+    "status": 0,
+    "info": "success",
+    "data": [
+        {
+            "id": "1",
+            "name": "股票内参",
+            "icon": "https://wxtest.firstwisdom.cn/public/miniapp-images/infei-tab-gpnc.png",
+            "url": "https://mp.weixin.qq.com/mp/profile_ext?action=home&__biz=MzUzNDY2NzYxMw==\t&sce\tne=124#wechat_redirect",
+            "type": "1"
+        },
+        {
+            "id": "2",
+            "name": "策略选股",
+            "icon": "https://wxtest.firstwisdom.cn/public/miniapp-images/infei-tab-clxg.png",
+            "url": "https://wx.firstwisdom.cn/#/analysis/analysis_strategy",
+            "type": "1"
+        },
+        {
+            "id": "3",
+            "name": "概念选股",
+            "icon": "https://wxtest.firstwisdom.cn/public/miniapp-images/infei-tab-gnxg.png",
+            "url": "https://wx.firstwisdom.cn/#/analysis/analysis_plate",
+            "type": "1"
+        },
+        {
+            "id": "4",
+            "name": "趋势看多",
+            "icon": "https://wxtest.firstwisdom.cn/public/miniapp-images/infei-tab-qskd.png",
+            "url": "/pages/page-trend",
+            "type": "2"
+        }
+    ]
+}
+
+首页banner列表接口
+URL ：http://183.56.160.133/newindex/getBannerList
+请求方式 get / post
+
+参数 ： 无
+
+返回值
+
+{
+    "status": 0,
+    "info": "success",
+    "data": [
+        {
+            "id": "2",
+            "image": "https://wx.firstwisdom.cn/public/images/timing__banner1.png",
+            "url": "https://wx.firstwisdom.cn/?code=1&state=do_login/#/module_product?type=xnjg",
+            "remark": ""
+        },
+        {
+            "id": "3",
+            "image": "https://wx.firstwisdom.cn/public/images/timing__banner2.png",
+            "url": "https://wx.firstwisdom.cn/?code=1&state=do_login/#/module_product?type=ztds",
+            "remark": ""
+        },
+        {
+            "id": "4",
+            "image": "https://wx.firstwisdom.cn/public/images/timing__banner3.png",
+            "url": "https://wx.firstwisdom.cn/#/module_product?type=t0",
+            "remark": ""
+        },
+        {
+            "id": "5",
+            "image": "https://wx.firstwisdom.cn/public/images/timing__banner4.png",
+            "url": "https://wx.firstwisdom.cn/#/module_product?type=dk",
+            "remark": ""
+        }
+    ]
+}
+
+首页板块列表
+URL http://183.56.160.133/newindex/getTodayThemeList
+请求方式 get / post
+
+参数 ： 无
+
+返回值
+{
+    "status": 0,
+    "info": "success",
+    "data": {
+        "hot": [],
+        "chance": [
+            {
+                "theme_id": "234",
+                "theme_name": "养老金",
+                "top_symbol": "600723",
+                "top_name": "首商股份",
+                "top_change": "-1.75"
+            },
+            {
+                "theme_id": "355",
+                "theme_name": "一带一路",
+                "top_symbol": "002302",
+                "top_name": "西部建设",
+                "top_change": "2.67"
+            },
+            {
+                "theme_id": "391",
+                "theme_name": "光伏",
+                "top_symbol": "300376",
+                "top_name": "易事特",
+                "top_change": "1.83"
+            },
+            {
+                "theme_id": "427",
+                "theme_name": "创投",
+                "top_symbol": "300110",
+                "top_name": "华仁药业",
+                "top_change": "1.48"
+            },
+            {
+                "theme_id": "435",
+                "theme_name": "铜",
+                "top_symbol": "000630",
+                "top_name": "铜陵有色",
+                "top_change": "-0.38"
+            },
+            {
+                "theme_id": "445",
+                "theme_name": "旅游",
+                "top_symbol": "600258",
+                "top_name": "首旅酒店",
+                "top_change": "2.18"
+            }
+        ]
+    }
+}
+
+获取用户的自选股接口
+URL http://183.56.160.133/newindex/getUserStocks
+
+请求方式 get / post
+
+参数 ： 无 但是要登录
+
+返回值
+{
+    "status": 0,
+    "info": "success",
+    "data": [
+        {
+            "id": "303",
+            "symbol": "300496",
+            "stock_name": "中科创达",
+            "status": "0",
+            "last_price": "38.67",
+            "change_percent": "2.68"
+        },
+        {
+            "id": "302",
+            "symbol": "002903",
+            "stock_name": "宇环数控",
+            "status": "0",
+            "last_price": "41.3",
+            "change_percent": "-5.58"
+        },
+        {
+            "id": "301",
+            "symbol": "300504",
+            "stock_name": "天邑股份",
+            "status": "0",
+            "last_price": "43.37",
+            "change_percent": "7.56"
+        },
+        {
+            "id": "279",
+            "symbol": "300549",
+            "stock_name": "优德精密",
+            "status": "0",
+            "last_price": "18.88",
+            "change_percent": "-3.43"
+        }
+    ]
+}
+
+未登录返回结果
+{
+    "status": 2,
+    "info": "请登录",
+    "data": []
+}
+
+
+中长线机会板块接口
+URL http://183.56.160.133/newindex/getLongChanceList
+请求方式 get / post
+
+参数 ： 无
+{
+    "status": 0,
+    "info": "success",
+    "data": [
+        {
+            "theme_id": "225",
+            "theme_name": "独角兽",
+            "recommend_text": "",
+            "date": "03-06",
+            "stock_list": [
+                {
+                    "symbol": "300216",
+                    "date": "03-06",
+                    "change_percent": "9.44"
+                },
+                {
+                    "symbol": "300033",
+                    "date": "03-06",
+                    "change_percent": "48.25"
+                }
+            ]
+        },
+        {
+            "theme_id": "227",
+            "theme_name": "小米",
+            "recommend_text": "",
+            "date": "03-06",
+            "stock_list": [
+                {
+                    "symbol": "603660",
+                    "date": "03-06",
+                    "change_percent": "36.41"
+                }
+            ]
+        },
+        {
+            "theme_id": "226",
+            "theme_name": "工业互联网",
+            "recommend_text": "",
+            "date": "03-06",
+            "stock_list": [
+                {
+                    "symbol": "300315",
+                    "date": "03-06",
+                    "change_percent": "5.02"
+                }
+            ]
+        }
+    ]
+}
+
+
+趋势看多接口
+URL http://183.56.160.133/newindex/getDKList
+请求方式 get / post
+
+参数：
+参数名字	        参数类型	    参数描述	    默认值	    是否必须	    备注
+change_percent	String	    涨幅	        desc	        否	    desc 降序 asc  升序
+return_rate	    String	    90日DK点操作收益	            否	    desc 降序 asc  升序
+page	        Int		                1               否
+page_size	    Int         每页数量	    20
+
+返回值：
+{
+    "status": 0,
+    "info": "success",
+    "data": {
+        "date": "2018-04-19 09:00",
+        "desc": "根据量价走势和技术形态挑选短期趋势看多的股票",
+        "list": [
+            {
+                "symbol": "600712",
+                "date": "2018-03-30",
+                "return_rate": "-0.03",
+                "name": "南宁百货",
+                "status": "E",
+                "price": "7.64",
+                "change_percent": "0.0480109739369"
+            },
+            {
+                "symbol": "000807",
+                "date": "2018-03-30",
+                "return_rate": "0.20",
+                "name": "云铝股份",
+                "status": "E",
+                "price": "7.89",
+                "change_percent": "0.039525691699605"
+            },
+            {
+                "symbol": "600232",
+                "date": "2018-03-30",
+                "return_rate": "0.02",
+                "name": "金鹰股份",
+                "status": "E",
+                "price": "6.77",
+                "change_percent": "0.033587786259542"
+            },
+            {
+                "symbol": "002267",
+                "date": "2018-03-30",
+                "return_rate": "0.00",
+                "name": "陕天然气",
+                "status": "E",
+                "price": "7.1",
+                "change_percent": "0.023054755043228"
+            },
+            {
+                "symbol": "002160",
+                "date": "2018-03-30",
+                "return_rate": "-0.09",
+                "name": "常铝股份",
+                "status": "E",
+                "price": "6.4",
+                "change_percent": "0.014263074484945"
+            }
+        ]
+    }
+}
+
+策略选股接口
+URL http://183.56.160.133/newindex/getSmartRecord
+请求方式 get / post
+
+参数：无
+
+返回值
+说明：hot :1= 热门 0=不热门， free ：1=免费 0：收费
+{
+    "status": 0,
+    "info": "success",
+    "data": [
+        {
+            "earnings_30": 1196.5516666667,
+            "earnings_30_text": "30天累计收益率",
+            "odds": 0,
+            "odds_text": "胜率",
+            "name": "一智金股",
+            "description": "通过大数据和量化模型筛选后、再结合专家知识优选标的，收益稳健、胜率高",
+            "tags": [
+                "胜率高",
+                "稳健收益"
+            ],
+            "hot": "1",
+            "free": "1",
+            "type": "yzjg"
+        },
+        {
+            "earnings_30": 2527.74,
+            "earnings_30_text": "30天累计收益率",
+            "odds": 0,
+            "odds_text": "胜率",
+            "name": "涨停大师",
+            "description": "根据公司公告、财报以及市场热点等多方面消息，甄选出有望冲刺涨停个股",
+            "tags": [
+                "超短线",
+                "擅长抓涨停"
+            ],
+            "hot": "1",
+            "free": "1",
+            "type": "ztds"
+        },
+        {
+            "earnings_30": 924.16666666667,
+            "earnings_30_text": "30天累计收益率",
+            "odds": 0,
+            "odds_text": "胜率",
+            "name": "主力雷达",
+            "description": "每日监控沪深A股主力资金的进出情况、通过异动的资金流入，提前潜伏待涨个股",
+            "tags": [
+                "资金监控",
+                "抓主力"
+            ],
+            "hot": "0",
+            "free": "1",
+            "type": "zlld"
+        }
+    ]
+}

@@ -1,0 +1,104 @@
+<?php
+//判断是否是交易日
+function is_trade_day($db, $time)
+{
+	if((date('w', $time)==6) || (date('w', $time) == 0)) { return false; }
+	$date = date('Ymd', $time);
+	$sql = "select * from `holiday` where date = '{$date}'";
+	if ($db->query($sql, array(), 'row')) { return false; }
+	return true;
+}
+
+$dsn = array(
+    'host'      =>  'bigdata5',
+    'port'      =>  3306,
+    'user'      =>  'root',
+    'password'  =>  'BDdata5+!(@255',
+    'db'        =>  'stock',
+);
+
+$redis_conf = array(
+	'host' => '192.168.1.245',
+	'port' => '6379',
+	'event_key' => 'Stock_Events',
+	'event_processing_key' => 'Stock_Events_Processing',
+);
+
+$wx_conf = array(
+	'access_token_redis_key' => 'wx_access_token_test',
+	'appid' => '',
+	'secret' => '',
+);
+
+$tmpl_conf = array(
+	'index_9_pm' =>
+		array( 
+			'tmp_id' => 'aczstP_F9VU2iK6dcgk9hrxQwN2m2T3HCaaiF7yysuk',
+			'url' => 'http://xiaonitest.i2nt.com',
+			'data' => array(
+				'first' => array(
+					'value' => "%s",
+					"color" => '#ff0000',
+					),
+				'keyword1' => array(
+					'value' => "%s",
+					"color" => '#000000',
+					),	
+				'keyword2' => array(
+					'value' => "%s",
+					"color"=> "#000000",				
+					),
+				'remark' => array(
+					'value' => "%s",
+					"color"=> "#459ae9",
+					),								
+			),
+		),
+	'B_S_point' =>
+	array( 
+			'tmp_id' => 'G4bfM8dY3rzjik3IDHZ0T6zEkbRA9XPParXS3L9Ibrc',
+			'url' => 'http://xiaonitest.i2nt.com/#/stock/',
+			'data' => array(
+				'first' => array(
+					'value' => "%s",
+					"color" => '#ff0000',
+					),
+				'keyword1' => array(
+					'value' => "%s",
+					"color" => '#459ae9',
+					),	
+				'keyword2' => array(
+					'value' => "%s",
+					"color"=> "#000000",				
+					),
+				'remark' => array(
+					'value' => "%s",
+					"color"=> "#000000",
+					),								
+				),
+	),
+	'sys_op' =>
+	array( 
+			'tmp_id' => 'YaUFUOrMORIGckm4FolGaENJKvGmJD5bO4xjzXDgdpQ',
+			'url' => '',
+			'data' => array(
+				'first' => array(
+					'value' => "%s",
+					"color" => '#ff0000',
+					),
+				'keyword1' => array(
+					'value' => "%s",
+					"color" => '#459ae9',
+					),	
+				'keyword2' => array(
+					'value' => "%s",
+					"color"=> "#000000",				
+					),
+				'remark' => array(
+					'value' => "%s",
+					"color"=> "#000000",
+					),								
+				),
+	)
+);
+
