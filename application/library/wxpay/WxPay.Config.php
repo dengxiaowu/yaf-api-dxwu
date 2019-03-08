@@ -24,11 +24,11 @@ class WxPayConfig
      */
 
     //公众号
-    const APPID = 'wx607adf2598a22a33';
-    const MCHID = '1498682702';
-    const APPSECRET = '8dddfca6ce68142b8b105a0cf0e072c5';
+    const APPID = '';
+    const MCHID = '';
+    const APPSECRET = '';
     //商户支付密钥
-    const KEY = 'c2c568148d2b8b1e05a0cf0e07ddfca6';
+    const KEY = '';
 
     //=======【证书路径设置】=====================================
     /**
